@@ -15,12 +15,18 @@
         .pk { @apply font-bold text-blue-700 bg-blue-100 border-b-2 border-blue-500; }
         .fk { @apply font-bold text-green-700 bg-green-100 border-b-2 border-green-500 border-dashed; }
         .transitive { @apply font-bold text-purple-700 bg-purple-100 border-b-2 border-purple-500; }
+        
+        /* Custom scrollbar for better UI */
+        ::-webkit-scrollbar { width: 6px; height: 6px; }
+        ::-webkit-scrollbar-track { background: transparent; }
+        ::-webkit-scrollbar-thumb { background: #cbd5e1; border-radius: 4px; }
+        ::-webkit-scrollbar-thumb:hover { background: #94a3b8; }
     </style>
 </head>
-<body class="bg-slate-50 text-slate-800 font-sans antialiased min-h-screen flex flex-col" x-data="normApp()">
+<body class="bg-slate-50 text-slate-800 font-sans antialiased h-screen flex flex-col overflow-hidden" x-data="normApp()">
 
     <!-- Header -->
-    <header class="bg-white shadow-sm border-b border-slate-200 sticky top-0 z-10">
+    <header class="bg-white shadow-sm border-b border-slate-200 flex-none z-10">
         <div class="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 h-16 flex items-center justify-between">
             <div class="flex items-center gap-3">
                 <i class="fa-solid fa-database text-blue-600 text-2xl"></i>
@@ -33,35 +39,35 @@
     </header>
 
     <!-- Main Content -->
-    <main class="flex-grow max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-8 w-full flex flex-col lg:flex-row gap-8">
+    <main class="flex-grow max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-6 w-full flex flex-col lg:flex-row gap-6 overflow-hidden">
         
-        <!-- Left Panel: Controls & Explanations -->
-        <div class="w-full lg:w-1/3 flex flex-col gap-6">
+        <!-- Left Panel: Controls & Explanations (Scrollable independently) -->
+        <div class="w-full lg:w-1/3 flex flex-col gap-6 overflow-y-auto pr-2 pb-4">
             
             <!-- Context Card -->
-            <div class="bg-white rounded-xl shadow-sm border border-slate-200 p-6">
+            <div class="bg-white rounded-xl shadow-sm border border-slate-200 p-5">
                 <h2 class="text-lg font-bold mb-2 flex items-center gap-2">
                     <i class="fa-solid fa-lightbulb text-yellow-500"></i>
                     <span x-text="t('whyTitle')"></span>
                 </h2>
-                <p class="text-sm text-slate-600 mb-4 leading-relaxed" x-text="t('whyDesc')"></p>
+                <div class="text-sm text-slate-600 mb-4 space-y-2 leading-relaxed" x-html="t('whyDesc')"></div>
                 
-                <div class="space-y-2 text-sm">
+                <div class="space-y-2 text-sm bg-slate-50 p-3 rounded-lg border border-slate-100">
                     <div class="flex items-center gap-2"><span class="w-3 h-3 rounded-full bg-blue-500"></span> <span x-text="t('legendPK')"></span></div>
                     <div class="flex items-center gap-2"><span class="w-3 h-3 rounded-full bg-green-500 border-2 border-dashed border-green-700"></span> <span x-text="t('legendFK')"></span></div>
-                    <div class="flex items-center gap-2"><span class="w-3 h-3 rounded-full bg-purple-500"></span> <span x-text="t('legendTransitive')"></span></div>
+                    <!-- <div class="flex items-center gap-2"><span class="w-3 h-3 rounded-full bg-purple-500"></span> <span x-text="t('legendTransitive')"></span></div> -->
                 </div>
             </div>
 
             <!-- Controls -->
-            <div class="bg-white rounded-xl shadow-sm border border-slate-200 p-6">
-                <h2 class="text-lg font-bold mb-4" x-text="t('controls')"></h2>
-                <div class="flex flex-col gap-3">
+            <div class="bg-white rounded-xl shadow-sm border border-slate-200 p-5 flex-none">
+                <h2 class="text-lg font-bold mb-3" x-text="t('controls')"></h2>
+                <div class="flex flex-col gap-2">
                     <template x-for="(step, index) in steps" :key="index">
                         <button 
                             @click="setStage(index)"
                             :class="stage === index ? 'bg-blue-600 text-white shadow-md' : 'bg-slate-100 text-slate-700 hover:bg-slate-200'"
-                            class="px-4 py-3 rounded-lg font-medium transition-all duration-200 flex justify-between items-center text-left">
+                            class="px-4 py-2.5 rounded-lg font-medium transition-all duration-200 flex justify-between items-center text-left">
                             <span x-text="t(step.nameKey)"></span>
                             <i class="fa-solid fa-chevron-right" x-show="stage === index"></i>
                         </button>
@@ -70,18 +76,18 @@
             </div>
 
             <!-- Current Stage Explanation -->
-            <div class="bg-blue-50 rounded-xl border border-blue-200 p-6 table-transition" x-show="true">
+            <div class="bg-blue-50 rounded-xl border border-blue-200 p-5 table-transition flex-none">
                 <h3 class="text-blue-800 font-bold text-lg mb-2" x-text="t(steps[stage].nameKey)"></h3>
                 <div class="text-sm text-blue-900 space-y-3 leading-relaxed" x-html="t(steps[stage].descKey)"></div>
             </div>
 
         </div>
 
-        <!-- Right Panel: Visualization -->
-        <div class="w-full lg:w-2/3 bg-slate-200/50 rounded-2xl border border-slate-200 p-6 min-h-[600px] flex flex-col gap-6 overflow-x-auto relative">
+        <!-- Right Panel: Visualization (Scrollable independently) -->
+        <div class="w-full lg:w-2/3 bg-slate-200/50 rounded-2xl border border-slate-200 p-6 flex flex-col gap-6 overflow-y-auto overflow-x-auto relative">
             
             <!-- UNF -->
-            <div x-show="stage === 0" x-transition.opacity.duration.500ms class="bg-white rounded-xl shadow-sm border border-red-200 overflow-hidden">
+            <div x-show="stage === 0" x-transition.opacity.duration.500ms class="bg-white rounded-xl shadow-sm border border-red-200 overflow-hidden flex-none">
                 <div class="bg-red-50 px-4 py-3 border-b border-red-200 font-bold text-red-800 flex items-center gap-2">
                     <i class="fa-solid fa-table-cells"></i> Student_Course_Record (UNF)
                 </div>
@@ -118,7 +124,7 @@
             </div>
 
             <!-- 1NF -->
-            <div x-show="stage === 1" x-transition.opacity.duration.500ms class="bg-white rounded-xl shadow-sm border border-slate-200 overflow-hidden">
+            <div x-show="stage === 1" x-transition.opacity.duration.500ms class="bg-white rounded-xl shadow-sm border border-slate-200 overflow-hidden flex-none">
                 <div class="bg-slate-50 px-4 py-3 border-b border-slate-200 font-bold text-slate-800 flex items-center gap-2">
                     <i class="fa-solid fa-table"></i> Student_Course_Record (1NF)
                 </div>
@@ -163,13 +169,16 @@
             </div>
 
             <!-- 2NF & 3NF Shared Container -->
-            <div x-show="stage >= 2" x-transition.opacity.duration.500ms class="flex flex-col gap-6">
+            <div x-show="stage >= 2" x-transition.opacity.duration.500ms class="flex flex-col gap-6 flex-none pb-8">
                 
                 <!-- 2NF Top Row: Students & Student_Course -->
                 <div class="grid grid-cols-1 xl:grid-cols-2 gap-6">
                     <!-- Students Table -->
                     <div class="bg-white rounded-xl shadow-sm border border-slate-200 overflow-hidden h-fit">
-                        <div class="bg-blue-50 px-4 py-3 border-b border-blue-200 font-bold text-blue-800">Students <span class="text-sm font-normal text-blue-600">(Already in 3NF)</span></div>
+                        <div class="bg-blue-50 px-4 py-3 border-b border-blue-200 font-bold text-blue-800">
+                            Students 
+                            <span class="text-xs font-normal text-blue-600 block mt-1"><i class="fa-solid fa-check-circle"></i> Already in 3NF (No non-key attributes depend on other non-key attributes)</span>
+                        </div>
                         <table class="w-full text-sm text-left">
                             <thead class="bg-slate-50 border-b">
                                 <tr>
@@ -186,7 +195,10 @@
 
                     <!-- Student_Course Table -->
                     <div class="bg-white rounded-xl shadow-sm border border-slate-200 overflow-hidden h-fit">
-                        <div class="bg-green-50 px-4 py-3 border-b border-green-200 font-bold text-green-800">Student_Course <span class="text-sm font-normal text-green-600">(Already in 3NF)</span></div>
+                        <div class="bg-green-50 px-4 py-3 border-b border-green-200 font-bold text-green-800">
+                            Student_Course 
+                            <span class="text-xs font-normal text-green-700 block mt-1"><i class="fa-solid fa-check-circle"></i> Already in 3NF (Only contains keys, no non-key attributes at all)</span>
+                        </div>
                         <table class="w-full text-sm text-left">
                             <thead class="bg-slate-50 border-b">
                                 <tr>
@@ -274,13 +286,6 @@
         </div>
     </main>
 
-    <!-- Footer -->
-    <footer class="bg-slate-800 text-slate-300 py-6 mt-auto">
-        <div class="max-w-7xl mx-auto px-4 text-center text-sm">
-            <p>Created by Sam Li | ICT Elective 2A: Databases</p>
-        </div>
-    </footer>
-
     <script>
         document.addEventListener('alpine:init', () => {
             Alpine.data('normApp', () => ({
@@ -296,8 +301,8 @@
                     zh: {
                         title: '資料庫正規化教學 (Database Normalization)',
                         whyTitle: '為什麼需要正規化？',
-                        whyDesc: '未正規化的表格會導致「資料冗餘」(Data Redundancy)，這不僅浪費儲存空間，更會引發更新、新增和刪除異常 (Anomalies)。正規化的目的就是把大表「拆解」成關聯的小表，透過外鍵 (Foreign Key) 連結，確保每筆資料只存一次。',
-                        legendPK: '主鍵 (Primary Key) - 唯一識別記錄',
+                        whyDesc: '<p>未正規化的表格會導致「資料冗餘」(Data Redundancy)，引發更新、新增和刪除異常。正規化就是把大表「拆解」成關聯的小表。</p><ul class="list-disc pl-5 mt-2 text-slate-700 space-y-1"><li><strong>部分依賴 (Partial Dependency):</strong> 非主鍵屬性只依賴於「複合主鍵」的其中一部分 (在 2NF 解決)。</li><li><strong>傳遞依賴 (Transitive Dependency):</strong> 非主鍵屬性依賴於另一個「非主鍵屬性」 (在 3NF 解決)。</li></ul>',
+                        legendPK: '主鍵 (Primary Key) - 唯一識別每筆資料',
                         legendFK: '外鍵 (Foreign Key) - 連結其他表格',
                         legendTransitive: '傳遞依賴 (Transitive Dependency) - 需在 3NF 解決',
                         controls: '操作面板',
@@ -306,15 +311,15 @@
                         '1nf': '第一正規化 (1NF)',
                         '1nfDesc': '<strong>規則：</strong> 消除重複群組，確保每個儲存格只有單一值 (Atomic value)。<br><br><strong>動作：</strong> 我們把 Alice 的記錄拆成兩行。為了唯一識別每一行，我們需要使用<strong>複合主鍵 (Composite Key)</strong>：<code>StudentID + CourseID</code>。<br><br><span class="text-red-600 font-bold">問題浮現：</span> 現在 Alice 的名字重複出現了兩次！這造成了資料冗餘。',
                         '2nf': '第二正規化 (2NF)',
-                        '2nfDesc': '<strong>規則：</strong> 滿足 1NF，並消除<strong>部分依賴 (Partial Dependency)</strong>。<br><br><strong>動作：</strong> <code>StudentName</code> 只依賴 <code>StudentID</code>，而不依賴完整的複合主鍵。所以我們把表格拆成三張表：學生表、課程資訊表，以及連接它們的橋樑表 (Student_Course)。<br><br><strong>注意：</strong> 學生表和橋樑表已經達到 3NF 標準了！但是 <code>Courses_Info</code> 表中，<code>Room</code> 依賴 <code>Teacher</code>，而 <code>Teacher</code> 依賴 <code>CourseID</code>，這稱為「傳遞依賴」，仍有隱患。',
+                        '2nfDesc': '<strong>規則：</strong> 滿足 1NF，並消除<strong>部分依賴 (Partial Dependency)</strong>。<br><br><strong>動作：</strong> <code>StudentName</code> 只依賴 <code>StudentID</code>，而不依賴完整的複合主鍵。所以我們把表格拆成三張表：學生表、課程資訊表，以及連接它們的橋樑表 (Student_Course)。<br><br><strong>💡 關於 (PK, FK)：</strong> <code>Student_Course</code> 表中的 <code>StudentID</code> 和 <code>CourseID</code> 本身是外鍵(FK)用來連結其他表，但它們「組合起來」成為了這張表的複合主鍵(PK)。<br><br><strong>為什麼有些表已經是 3NF？</strong> 學生表和橋樑表已經沒有「非主鍵依賴其他非主鍵」的情況 (have no non-key attributes that depend on other non-key attributes)，所以它們直接達標 3NF！',
                         '3nf': '第三正規化 (3NF)',
-                        '3nfDesc': '<strong>規則：</strong> 滿足 2NF，並消除<strong>傳遞依賴 (Transitive Dependency)</strong>。<br><br><strong>動作：</strong> <code>Room</code> 依賴於非主鍵的 <code>Teacher</code>。如果老師換教室，我們要在所有他教的課程中更新教室，這會造成更新異常。我們再次拆解，獨立出 <code>Teachers</code> 表。<br><br><strong>完成！</strong> 現在每個非主鍵屬性都「完全且直接」依賴於主鍵。所有的表都達到了 3NF！'
+                        '3nfDesc': '<strong>規則：</strong> 滿足 2NF，並消除<strong>傳遞依賴 (Transitive Dependency)</strong>。<br><br><strong>動作：</strong> 在 <code>Courses_Info</code> 中，<code>Room</code> 依賴於非主鍵的 <code>Teacher</code>。如果老師換教室，我們要在所有他教的課程中更新教室，這會造成更新異常。我們再次拆解，獨立出 <code>Teachers</code> 表。<br><br><strong>完成！</strong> 現在每個非主鍵屬性都「完全且直接」依賴於主鍵，沒有任何非主鍵依賴另一個非主鍵 (have no non-key attributes that depend on other non-key attributes)。所有的表都達到了 3NF！'
                     },
                     en: {
                         title: 'Database Normalization Step-by-Step',
                         whyTitle: 'Why do we need Normalization?',
-                        whyDesc: 'Unnormalized tables lead to Data Redundancy, which wastes space and causes Update, Insertion, and Deletion Anomalies. Normalization "splits" large tables into smaller, focused ones linked by Foreign Keys, ensuring each piece of data is stored exactly once.',
-                        legendPK: 'Primary Key (PK) - Uniquely identifies a record',
+                        whyDesc: '<p>Unnormalized tables lead to Data Redundancy, causing Update, Insertion, and Deletion Anomalies. Normalization "splits" large tables into smaller ones.</p><ul class="list-disc pl-5 mt-2 text-slate-700 space-y-1"><li><strong>Partial Dependency:</strong> A non-key attribute depends on only a part of a composite primary key (Fixed in 2NF).</li><li><strong>Transitive Dependency:</strong> A non-key attribute depends on another non-key attribute (Fixed in 3NF).</li></ul>',
+                        legendPK: 'Primary Key (PK) - Uniquely identifies each row',
                         legendFK: 'Foreign Key (FK) - Links to another table',
                         legendTransitive: 'Transitive Dependency - To be fixed in 3NF',
                         controls: 'Control Panel',
@@ -323,9 +328,9 @@
                         '1nf': 'First Normal Form (1NF)',
                         '1nfDesc': '<strong>Rule:</strong> Eliminate repeating groups. Ensure atomic values in every cell.<br><br><strong>Action:</strong> We split Alice\'s record into two rows. To uniquely identify each row, we now need a <strong>Composite Primary Key</strong>: <code>StudentID + CourseID</code>.<br><br><span class="text-red-600 font-bold">Problem Emerges:</span> Alice\'s name is now repeated twice! This is Data Redundancy.',
                         '2nf': 'Second Normal Form (2NF)',
-                        '2nfDesc': '<strong>Rule:</strong> Must be in 1NF and eliminate <strong>Partial Dependencies</strong>.<br><br><strong>Action:</strong> <code>StudentName</code> only depends on <code>StudentID</code>, not the full composite key. We split the table into Students, Courses_Info, and a junction table (Student_Course).<br><br><strong>Notice:</strong> The Students and Student_Course tables are actually already in 3NF! However, in <code>Courses_Info</code>, <code>Room</code> depends on <code>Teacher</code>, which depends on <code>CourseID</code>. This is a Transitive Dependency.',
+                        '2nfDesc': '<strong>Rule:</strong> Must be in 1NF and eliminate <strong>Partial Dependencies</strong>.<br><br><strong>Action:</strong> <code>StudentName</code> only depends on <code>StudentID</code>, not the full composite key. We split the table into Students, Courses_Info, and a junction table (Student_Course).<br><br><strong>💡 About (PK, FK):</strong> In <code>Student_Course</code>, the columns are Foreign Keys linking to other tables, but combined together, they form the Composite Primary Key for this table.<br><br><strong>Why are some tables already in 3NF?</strong> The Students and Student_Course tables <em>have no non-key attributes that depend on other non-key attributes</em>. Therefore, they inherently meet 3NF requirements immediately!',
                         '3nf': 'Third Normal Form (3NF)',
-                        '3nfDesc': '<strong>Rule:</strong> Must be in 2NF and eliminate <strong>Transitive Dependencies</strong>.<br><br><strong>Action:</strong> <code>Room</code> depends on a non-key attribute (<code>Teacher</code>). If a teacher moves rooms, we\'d have to update it in every course they teach. We split this into a separate <code>Teachers</code> table.<br><br><strong>Done!</strong> Now every non-key attribute depends entirely and directly on the primary key. All tables are now in 3NF!'
+                        '3nfDesc': '<strong>Rule:</strong> Must be in 2NF and eliminate <strong>Transitive Dependencies</strong>.<br><br><strong>Action:</strong> <code>Room</code> depends on a non-key attribute (<code>Teacher</code>). If a teacher moves rooms, we\'d have to update it in every course they teach. We split this into a separate <code>Teachers</code> table.<br><br><strong>Done!</strong> Now every non-key attribute depends entirely and directly on the primary key. They <em>have no non-key attributes that depend on other non-key attributes</em>. All tables are now in 3NF!'
                     }
                 },
                 toggleLang() {
