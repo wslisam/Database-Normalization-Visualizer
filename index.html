@@ -1,0 +1,344 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Database Normalization Step-by-Step</title>
+    <script src="https://cdn.tailwindcss.com"></script>
+    <script defer src="https://cdn.jsdelivr.net/npm/alpinejs@3.x.x/dist/cdn.min.js"></script>
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
+    <style>
+        [x-cloak] { display: none !important; }
+        .table-transition {
+            transition: all 0.5s ease-in-out;
+        }
+        .pk { @apply font-bold text-blue-700 bg-blue-100 border-b-2 border-blue-500; }
+        .fk { @apply font-bold text-green-700 bg-green-100 border-b-2 border-green-500 border-dashed; }
+        .transitive { @apply font-bold text-purple-700 bg-purple-100 border-b-2 border-purple-500; }
+    </style>
+</head>
+<body class="bg-slate-50 text-slate-800 font-sans antialiased min-h-screen flex flex-col" x-data="normApp()">
+
+    <!-- Header -->
+    <header class="bg-white shadow-sm border-b border-slate-200 sticky top-0 z-10">
+        <div class="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 h-16 flex items-center justify-between">
+            <div class="flex items-center gap-3">
+                <i class="fa-solid fa-database text-blue-600 text-2xl"></i>
+                <h1 class="text-xl font-bold text-slate-800" x-text="t('title')"></h1>
+            </div>
+            <button @click="toggleLang()" class="px-4 py-2 rounded-md bg-slate-100 hover:bg-slate-200 text-sm font-medium transition-colors">
+                <i class="fa-solid fa-language mr-2"></i><span x-text="lang === 'zh' ? 'English' : '中文'"></span>
+            </button>
+        </div>
+    </header>
+
+    <!-- Main Content -->
+    <main class="flex-grow max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-8 w-full flex flex-col lg:flex-row gap-8">
+        
+        <!-- Left Panel: Controls & Explanations -->
+        <div class="w-full lg:w-1/3 flex flex-col gap-6">
+            
+            <!-- Context Card -->
+            <div class="bg-white rounded-xl shadow-sm border border-slate-200 p-6">
+                <h2 class="text-lg font-bold mb-2 flex items-center gap-2">
+                    <i class="fa-solid fa-lightbulb text-yellow-500"></i>
+                    <span x-text="t('whyTitle')"></span>
+                </h2>
+                <p class="text-sm text-slate-600 mb-4 leading-relaxed" x-text="t('whyDesc')"></p>
+                
+                <div class="space-y-2 text-sm">
+                    <div class="flex items-center gap-2"><span class="w-3 h-3 rounded-full bg-blue-500"></span> <span x-text="t('legendPK')"></span></div>
+                    <div class="flex items-center gap-2"><span class="w-3 h-3 rounded-full bg-green-500 border-2 border-dashed border-green-700"></span> <span x-text="t('legendFK')"></span></div>
+                    <div class="flex items-center gap-2"><span class="w-3 h-3 rounded-full bg-purple-500"></span> <span x-text="t('legendTransitive')"></span></div>
+                </div>
+            </div>
+
+            <!-- Controls -->
+            <div class="bg-white rounded-xl shadow-sm border border-slate-200 p-6">
+                <h2 class="text-lg font-bold mb-4" x-text="t('controls')"></h2>
+                <div class="flex flex-col gap-3">
+                    <template x-for="(step, index) in steps" :key="index">
+                        <button 
+                            @click="setStage(index)"
+                            :class="stage === index ? 'bg-blue-600 text-white shadow-md' : 'bg-slate-100 text-slate-700 hover:bg-slate-200'"
+                            class="px-4 py-3 rounded-lg font-medium transition-all duration-200 flex justify-between items-center text-left">
+                            <span x-text="t(step.nameKey)"></span>
+                            <i class="fa-solid fa-chevron-right" x-show="stage === index"></i>
+                        </button>
+                    </template>
+                </div>
+            </div>
+
+            <!-- Current Stage Explanation -->
+            <div class="bg-blue-50 rounded-xl border border-blue-200 p-6 table-transition" x-show="true">
+                <h3 class="text-blue-800 font-bold text-lg mb-2" x-text="t(steps[stage].nameKey)"></h3>
+                <div class="text-sm text-blue-900 space-y-3 leading-relaxed" x-html="t(steps[stage].descKey)"></div>
+            </div>
+
+        </div>
+
+        <!-- Right Panel: Visualization -->
+        <div class="w-full lg:w-2/3 bg-slate-200/50 rounded-2xl border border-slate-200 p-6 min-h-[600px] flex flex-col gap-6 overflow-x-auto relative">
+            
+            <!-- UNF -->
+            <div x-show="stage === 0" x-transition.opacity.duration.500ms class="bg-white rounded-xl shadow-sm border border-red-200 overflow-hidden">
+                <div class="bg-red-50 px-4 py-3 border-b border-red-200 font-bold text-red-800 flex items-center gap-2">
+                    <i class="fa-solid fa-table-cells"></i> Student_Course_Record (UNF)
+                </div>
+                <table class="w-full text-sm text-left">
+                    <thead class="bg-slate-50 text-slate-600 border-b">
+                        <tr>
+                            <th class="px-4 py-3">StudentID</th>
+                            <th class="px-4 py-3">StudentName</th>
+                            <th class="px-4 py-3">CourseID</th>
+                            <th class="px-4 py-3">CourseName</th>
+                            <th class="px-4 py-3">Teacher</th>
+                            <th class="px-4 py-3">Room</th>
+                        </tr>
+                    </thead>
+                    <tbody>
+                        <tr class="border-b">
+                            <td class="px-4 py-3 font-medium">S01</td>
+                            <td class="px-4 py-3">Alice</td>
+                            <td class="px-4 py-3">C101<br><span class="text-red-500 mt-1 block">C102</span></td>
+                            <td class="px-4 py-3">Math<br><span class="text-red-500 mt-1 block">Physics</span></td>
+                            <td class="px-4 py-3">Mr. Smith<br><span class="text-red-500 mt-1 block">Dr. Lee</span></td>
+                            <td class="px-4 py-3">R1<br><span class="text-red-500 mt-1 block">R2</span></td>
+                        </tr>
+                        <tr class="border-b">
+                            <td class="px-4 py-3 font-medium">S02</td>
+                            <td class="px-4 py-3">Bob</td>
+                            <td class="px-4 py-3">C101</td>
+                            <td class="px-4 py-3">Math</td>
+                            <td class="px-4 py-3">Mr. Smith</td>
+                            <td class="px-4 py-3">R1</td>
+                        </tr>
+                    </tbody>
+                </table>
+            </div>
+
+            <!-- 1NF -->
+            <div x-show="stage === 1" x-transition.opacity.duration.500ms class="bg-white rounded-xl shadow-sm border border-slate-200 overflow-hidden">
+                <div class="bg-slate-50 px-4 py-3 border-b border-slate-200 font-bold text-slate-800 flex items-center gap-2">
+                    <i class="fa-solid fa-table"></i> Student_Course_Record (1NF)
+                </div>
+                <table class="w-full text-sm text-left">
+                    <thead class="bg-slate-50 text-slate-600 border-b">
+                        <tr>
+                            <th class="px-4 py-3 pk">StudentID (PK)</th>
+                            <th class="px-4 py-3">StudentName</th>
+                            <th class="px-4 py-3 pk">CourseID (PK)</th>
+                            <th class="px-4 py-3">CourseName</th>
+                            <th class="px-4 py-3">Teacher</th>
+                            <th class="px-4 py-3">Room</th>
+                        </tr>
+                    </thead>
+                    <tbody>
+                        <tr class="border-b bg-yellow-50">
+                            <td class="px-4 py-3 pk">S01</td>
+                            <td class="px-4 py-3 text-red-600 font-bold">Alice</td>
+                            <td class="px-4 py-3 pk">C101</td>
+                            <td class="px-4 py-3">Math</td>
+                            <td class="px-4 py-3">Mr. Smith</td>
+                            <td class="px-4 py-3">R1</td>
+                        </tr>
+                        <tr class="border-b bg-yellow-50">
+                            <td class="px-4 py-3 pk">S01</td>
+                            <td class="px-4 py-3 text-red-600 font-bold">Alice</td>
+                            <td class="px-4 py-3 pk">C102</td>
+                            <td class="px-4 py-3">Physics</td>
+                            <td class="px-4 py-3">Dr. Lee</td>
+                            <td class="px-4 py-3">R2</td>
+                        </tr>
+                        <tr class="border-b">
+                            <td class="px-4 py-3 pk">S02</td>
+                            <td class="px-4 py-3">Bob</td>
+                            <td class="px-4 py-3 pk">C101</td>
+                            <td class="px-4 py-3">Math</td>
+                            <td class="px-4 py-3">Mr. Smith</td>
+                            <td class="px-4 py-3">R1</td>
+                        </tr>
+                    </tbody>
+                </table>
+            </div>
+
+            <!-- 2NF & 3NF Shared Container -->
+            <div x-show="stage >= 2" x-transition.opacity.duration.500ms class="flex flex-col gap-6">
+                
+                <!-- 2NF Top Row: Students & Student_Course -->
+                <div class="grid grid-cols-1 xl:grid-cols-2 gap-6">
+                    <!-- Students Table -->
+                    <div class="bg-white rounded-xl shadow-sm border border-slate-200 overflow-hidden h-fit">
+                        <div class="bg-blue-50 px-4 py-3 border-b border-blue-200 font-bold text-blue-800">Students <span class="text-sm font-normal text-blue-600">(Already in 3NF)</span></div>
+                        <table class="w-full text-sm text-left">
+                            <thead class="bg-slate-50 border-b">
+                                <tr>
+                                    <th class="px-4 py-3 pk">StudentID (PK)</th>
+                                    <th class="px-4 py-3">StudentName</th>
+                                </tr>
+                            </thead>
+                            <tbody>
+                                <tr class="border-b"><td class="px-4 py-3 pk">S01</td><td class="px-4 py-3">Alice</td></tr>
+                                <tr class="border-b"><td class="px-4 py-3 pk">S02</td><td class="px-4 py-3">Bob</td></tr>
+                            </tbody>
+                        </table>
+                    </div>
+
+                    <!-- Student_Course Table -->
+                    <div class="bg-white rounded-xl shadow-sm border border-slate-200 overflow-hidden h-fit">
+                        <div class="bg-green-50 px-4 py-3 border-b border-green-200 font-bold text-green-800">Student_Course <span class="text-sm font-normal text-green-600">(Already in 3NF)</span></div>
+                        <table class="w-full text-sm text-left">
+                            <thead class="bg-slate-50 border-b">
+                                <tr>
+                                    <th class="px-4 py-3 fk">StudentID (PK, FK)</th>
+                                    <th class="px-4 py-3 fk">CourseID (PK, FK)</th>
+                                </tr>
+                            </thead>
+                            <tbody>
+                                <tr class="border-b"><td class="px-4 py-3 fk">S01</td><td class="px-4 py-3 fk">C101</td></tr>
+                                <tr class="border-b"><td class="px-4 py-3 fk">S01</td><td class="px-4 py-3 fk">C102</td></tr>
+                                <tr class="border-b"><td class="px-4 py-3 fk">S02</td><td class="px-4 py-3 fk">C101</td></tr>
+                            </tbody>
+                        </table>
+                    </div>
+                </div>
+
+                <!-- Courses (2NF state) -->
+                <div x-show="stage === 2" class="bg-white rounded-xl shadow-sm border border-slate-200 overflow-hidden">
+                    <div class="bg-purple-50 px-4 py-3 border-b border-purple-200 font-bold text-purple-800">Courses_Info <span class="text-sm font-normal text-purple-600">(Only in 2NF - Needs fixing)</span></div>
+                    <table class="w-full text-sm text-left">
+                        <thead class="bg-slate-50 border-b">
+                            <tr>
+                                <th class="px-4 py-3 pk">CourseID (PK)</th>
+                                <th class="px-4 py-3">CourseName</th>
+                                <th class="px-4 py-3 transitive">Teacher</th>
+                                <th class="px-4 py-3 transitive">Room</th>
+                            </tr>
+                        </thead>
+                        <tbody>
+                            <tr class="border-b bg-purple-50/30">
+                                <td class="px-4 py-3 pk">C101</td>
+                                <td class="px-4 py-3">Math</td>
+                                <td class="px-4 py-3 transitive">Mr. Smith</td>
+                                <td class="px-4 py-3 transitive text-purple-700 font-bold">R1</td>
+                            </tr>
+                            <tr class="border-b bg-purple-50/30">
+                                <td class="px-4 py-3 pk">C102</td>
+                                <td class="px-4 py-3">Physics</td>
+                                <td class="px-4 py-3 transitive">Dr. Lee</td>
+                                <td class="px-4 py-3 transitive text-purple-700 font-bold">R2</td>
+                            </tr>
+                        </tbody>
+                    </table>
+                </div>
+
+                <!-- 3NF Bottom Row: Courses & Teachers -->
+                <div x-show="stage === 3" x-transition.opacity.duration.500ms class="grid grid-cols-1 xl:grid-cols-2 gap-6">
+                    <!-- Courses (3NF) -->
+                    <div class="bg-white rounded-xl shadow-sm border border-slate-200 overflow-hidden h-fit">
+                        <div class="bg-purple-50 px-4 py-3 border-b border-purple-200 font-bold text-purple-800">Courses <span class="text-sm font-normal text-purple-600">(3NF)</span></div>
+                        <table class="w-full text-sm text-left">
+                            <thead class="bg-slate-50 border-b">
+                                <tr>
+                                    <th class="px-4 py-3 pk">CourseID (PK)</th>
+                                    <th class="px-4 py-3">CourseName</th>
+                                    <th class="px-4 py-3 fk">Teacher (FK)</th>
+                                </tr>
+                            </thead>
+                            <tbody>
+                                <tr class="border-b"><td class="px-4 py-3 pk">C101</td><td class="px-4 py-3">Math</td><td class="px-4 py-3 fk">Mr. Smith</td></tr>
+                                <tr class="border-b"><td class="px-4 py-3 pk">C102</td><td class="px-4 py-3">Physics</td><td class="px-4 py-3 fk">Dr. Lee</td></tr>
+                            </tbody>
+                        </table>
+                    </div>
+
+                    <!-- Teachers (3NF) -->
+                    <div class="bg-white rounded-xl shadow-sm border border-slate-200 overflow-hidden h-fit">
+                        <div class="bg-orange-50 px-4 py-3 border-b border-orange-200 font-bold text-orange-800">Teachers <span class="text-sm font-normal text-orange-600">(3NF)</span></div>
+                        <table class="w-full text-sm text-left">
+                            <thead class="bg-slate-50 border-b">
+                                <tr>
+                                    <th class="px-4 py-3 pk">Teacher (PK)</th>
+                                    <th class="px-4 py-3">Room</th>
+                                </tr>
+                            </thead>
+                            <tbody>
+                                <tr class="border-b"><td class="px-4 py-3 pk">Mr. Smith</td><td class="px-4 py-3">R1</td></tr>
+                                <tr class="border-b"><td class="px-4 py-3 pk">Dr. Lee</td><td class="px-4 py-3">R2</td></tr>
+                            </tbody>
+                        </table>
+                    </div>
+                </div>
+
+            </div>
+        </div>
+    </main>
+
+    <!-- Footer -->
+    <footer class="bg-slate-800 text-slate-300 py-6 mt-auto">
+        <div class="max-w-7xl mx-auto px-4 text-center text-sm">
+            <p>Created by Sam Li | ICT Elective 2A: Databases</p>
+        </div>
+    </footer>
+
+    <script>
+        document.addEventListener('alpine:init', () => {
+            Alpine.data('normApp', () => ({
+                lang: 'en',
+                stage: 0,
+                steps: [
+                    { nameKey: 'unf', descKey: 'unfDesc' },
+                    { nameKey: '1nf', descKey: '1nfDesc' },
+                    { nameKey: '2nf', descKey: '2nfDesc' },
+                    { nameKey: '3nf', descKey: '3nfDesc' }
+                ],
+                translations: {
+                    zh: {
+                        title: '資料庫正規化教學 (Database Normalization)',
+                        whyTitle: '為什麼需要正規化？',
+                        whyDesc: '未正規化的表格會導致「資料冗餘」(Data Redundancy)，這不僅浪費儲存空間，更會引發更新、新增和刪除異常 (Anomalies)。正規化的目的就是把大表「拆解」成關聯的小表，透過外鍵 (Foreign Key) 連結，確保每筆資料只存一次。',
+                        legendPK: '主鍵 (Primary Key) - 唯一識別記錄',
+                        legendFK: '外鍵 (Foreign Key) - 連結其他表格',
+                        legendTransitive: '傳遞依賴 (Transitive Dependency) - 需在 3NF 解決',
+                        controls: '操作面板',
+                        unf: '未正規化 (UNF)',
+                        unfDesc: '<strong>特徵：</strong> 包含多值屬性 (Multi-valued attributes) 或重複的資料群組。<br><br><strong>問題：</strong> 學生 Alice 同時報讀了兩科，導致課程和老師資料被擠在同一個儲存格內。這違反了關聯式資料庫的基本原則，無法進行有效的搜尋或排序。',
+                        '1nf': '第一正規化 (1NF)',
+                        '1nfDesc': '<strong>規則：</strong> 消除重複群組，確保每個儲存格只有單一值 (Atomic value)。<br><br><strong>動作：</strong> 我們把 Alice 的記錄拆成兩行。為了唯一識別每一行，我們需要使用<strong>複合主鍵 (Composite Key)</strong>：<code>StudentID + CourseID</code>。<br><br><span class="text-red-600 font-bold">問題浮現：</span> 現在 Alice 的名字重複出現了兩次！這造成了資料冗餘。',
+                        '2nf': '第二正規化 (2NF)',
+                        '2nfDesc': '<strong>規則：</strong> 滿足 1NF，並消除<strong>部分依賴 (Partial Dependency)</strong>。<br><br><strong>動作：</strong> <code>StudentName</code> 只依賴 <code>StudentID</code>，而不依賴完整的複合主鍵。所以我們把表格拆成三張表：學生表、課程資訊表，以及連接它們的橋樑表 (Student_Course)。<br><br><strong>注意：</strong> 學生表和橋樑表已經達到 3NF 標準了！但是 <code>Courses_Info</code> 表中，<code>Room</code> 依賴 <code>Teacher</code>，而 <code>Teacher</code> 依賴 <code>CourseID</code>，這稱為「傳遞依賴」，仍有隱患。',
+                        '3nf': '第三正規化 (3NF)',
+                        '3nfDesc': '<strong>規則：</strong> 滿足 2NF，並消除<strong>傳遞依賴 (Transitive Dependency)</strong>。<br><br><strong>動作：</strong> <code>Room</code> 依賴於非主鍵的 <code>Teacher</code>。如果老師換教室，我們要在所有他教的課程中更新教室，這會造成更新異常。我們再次拆解，獨立出 <code>Teachers</code> 表。<br><br><strong>完成！</strong> 現在每個非主鍵屬性都「完全且直接」依賴於主鍵。所有的表都達到了 3NF！'
+                    },
+                    en: {
+                        title: 'Database Normalization Step-by-Step',
+                        whyTitle: 'Why do we need Normalization?',
+                        whyDesc: 'Unnormalized tables lead to Data Redundancy, which wastes space and causes Update, Insertion, and Deletion Anomalies. Normalization "splits" large tables into smaller, focused ones linked by Foreign Keys, ensuring each piece of data is stored exactly once.',
+                        legendPK: 'Primary Key (PK) - Uniquely identifies a record',
+                        legendFK: 'Foreign Key (FK) - Links to another table',
+                        legendTransitive: 'Transitive Dependency - To be fixed in 3NF',
+                        controls: 'Control Panel',
+                        unf: 'Unnormalized Form (UNF)',
+                        unfDesc: '<strong>Characteristics:</strong> Contains multi-valued attributes or repeating groups.<br><br><strong>The Problem:</strong> Student Alice is enrolled in two courses, so multiple values are crammed into a single cell. This violates basic relational database rules and makes querying impossible.',
+                        '1nf': 'First Normal Form (1NF)',
+                        '1nfDesc': '<strong>Rule:</strong> Eliminate repeating groups. Ensure atomic values in every cell.<br><br><strong>Action:</strong> We split Alice\'s record into two rows. To uniquely identify each row, we now need a <strong>Composite Primary Key</strong>: <code>StudentID + CourseID</code>.<br><br><span class="text-red-600 font-bold">Problem Emerges:</span> Alice\'s name is now repeated twice! This is Data Redundancy.',
+                        '2nf': 'Second Normal Form (2NF)',
+                        '2nfDesc': '<strong>Rule:</strong> Must be in 1NF and eliminate <strong>Partial Dependencies</strong>.<br><br><strong>Action:</strong> <code>StudentName</code> only depends on <code>StudentID</code>, not the full composite key. We split the table into Students, Courses_Info, and a junction table (Student_Course).<br><br><strong>Notice:</strong> The Students and Student_Course tables are actually already in 3NF! However, in <code>Courses_Info</code>, <code>Room</code> depends on <code>Teacher</code>, which depends on <code>CourseID</code>. This is a Transitive Dependency.',
+                        '3nf': 'Third Normal Form (3NF)',
+                        '3nfDesc': '<strong>Rule:</strong> Must be in 2NF and eliminate <strong>Transitive Dependencies</strong>.<br><br><strong>Action:</strong> <code>Room</code> depends on a non-key attribute (<code>Teacher</code>). If a teacher moves rooms, we\'d have to update it in every course they teach. We split this into a separate <code>Teachers</code> table.<br><br><strong>Done!</strong> Now every non-key attribute depends entirely and directly on the primary key. All tables are now in 3NF!'
+                    }
+                },
+                toggleLang() {
+                    this.lang = this.lang === 'zh' ? 'en' : 'zh';
+                },
+                setStage(index) {
+                    this.stage = index;
+                },
+                t(key) {
+                    return this.translations[this.lang][key] || key;
+                }
+            }));
+        });
+    </script>
+</body>
+</html>
