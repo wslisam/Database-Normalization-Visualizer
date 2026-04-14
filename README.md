@@ -2,10 +2,10 @@
 
 <img width="841" height="989" alt="image" src="https://github.com/user-attachments/assets/280f56dd-7c34-46f1-9261-18829a821b02" />
 
-Overview:
+## Overview:
 This is designed to help HKDSE ICT students master the concept of Database Normalisation. It transforms abstract database theory into a visual, step-by-step interactive learning experience.
 
-How to Use This App:
+## How to Use This App:
 
 Explore the Concept: Use the "Control Panel" on the left to step through the stages of normalisation, from Unnormalized Form (UNF) up to Third Normal Form (3NF). Watch how the data tables split and transform dynamically on the right.
 
